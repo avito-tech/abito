@@ -1,0 +1,9 @@
+.DS_Store
+**/.ipynb_checkpoints/**
+/.vscode
+/ab_significance.egg-info
+**/__pycache__/**
+**/.pytest_cache/**
+/notebooks
+/.idea
+/abito.egg-info
