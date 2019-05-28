@@ -1,5 +1,8 @@
 # abito
 
+Python package for hypothesis testing. Suitable to use in A/B-testing software.
+Tested for Python >= 3.5
+
 ### Install
 ```
 pip install git+https://github.com/lnkov/abito.git --upgrade
@@ -14,6 +17,7 @@ pip install git+https://github.com/lnkov/abito.git --upgrade
 ### How to use
 ```python
 >>> from abito import RatioSample
+
 >>> sample = RatioSample(num=[1, 2, 3], den=[4, 5, 6])
 >>> sample.t_test_1samp(0.5)
 TTestResult(statistic=-1.4433756729740654, p_value=0.2857142857142853, mean_diff=-0.10000000000000003, mean_diff_std=0.06928203230275506)
