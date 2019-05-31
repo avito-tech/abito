@@ -6,9 +6,11 @@ with open('requirements.txt') as f:
 setup(
     name='abito',
     version='0.1',
-    description='Package for significance testing in A/B experiments',
+    license='MIT',
+    description='Package for hypothesis testing in A/B-experiments',
     author='Danila Lenkov',
     author_email='dlenkoff@gmail.com',
+    url='https://github.com/avito-tech/abito',
     packages=['abito'],
     install_requires=required,
 )
