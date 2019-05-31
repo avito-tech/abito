@@ -3,18 +3,18 @@
 Python package for hypothesis testing. Suitable to use in A/B-testing software.
 Tested for Python >= 3.5
 
-### Install
-```
-pip install git+https://github.com/lnkov/abito.git --upgrade
-```
-
-### Features
+##### Features
 1. Based on statistical tests from scipy.stats: t-test, Mann-Whitney U, Shapiro-Wilk, Levene, Mood, Median
 2. Works with weighted samples
 3. Can trim sample tails
 4. Works with Ratio samples
 
-### How to use
+## Installation
+```
+pip install git+https://github.com/lnkov/abito.git --upgrade
+```
+
+## Usage examples
 ```python
 >>> from abito import RatioSample
 
