@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Iterable
+from typing import Iterable, Tuple
 
 
 def argtrim(a: Iterable, ltrim: float = None, rtrim: float = None) -> np.ndarray:
@@ -26,7 +26,7 @@ def argtrim(a: Iterable, ltrim: float = None, rtrim: float = None) -> np.ndarray
     return args[lowercut:uppercut]
 
 
-def argtrimw(a: Iterable, weights: Iterable, ltrim: float = None, rtrim: float = None) -> np.ndarray:
+def argtrimw(a: Iterable, weights: Iterable, ltrim: float = None, rtrim: float = None) -> Tuple[np.ndarray, np.ndarray]:
     a = np.asarray(a)
     weights = np.asarray(weights)
 
@@ -43,29 +43,29 @@ def argtrimw(a: Iterable, weights: Iterable, ltrim: float = None, rtrim: float =
     lowercut_a = 0
     if ltrim is not None:
         if ltrim >= 1:
-            return []
+            return [], []
         lowercut_w = int(ltrim * nobs)
-        l = 0
         while lowercut_w > 0:
-            w = weights_sorted[l]
+            w = weights_sorted[lowercut_a]
             if w <= lowercut_w:
+                weights_sorted[lowercut_a] = 0
                 lowercut_a += 1
             else:
-                weights_sorted[l] = w - lowercut_w
+                weights_sorted[lowercut_a] = w - lowercut_w
             lowercut_w -= w
 
     uppercut_a = a.shape[0]
     if rtrim is not None:
         if rtrim >= 1:
-            return []
+            return [], []
         uppercut_w = int(rtrim * nobs)
-        u = uppercut_a - 1
         while uppercut_w > 0:
-            w = weights_sorted[u]
+            w = weights_sorted[uppercut_a - 1]
             if w <= uppercut_w:
+                weights_sorted[uppercut_a - 1] = 0
                 uppercut_a -= 1
             else:
-                weights_sorted[u] = w - uppercut_w
+                weights_sorted[uppercut_a - 1] = w - uppercut_w
             uppercut_w -= w
 
     ind_sorted = ind_sorted[lowercut_a:uppercut_a]

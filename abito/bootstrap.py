@@ -37,14 +37,11 @@ def get_bootstrap_dist(
         iters_batch_size: int,
         n_threads: int,
 ):
-    if iters_batch_size is None:
-        iters_batch_size = 1
     n_iters = int(n_iters)
     iters_batch_size = int(iters_batch_size)
     n_threads = int(n_threads)
 
-    if n_threads == -1:
-        n_threads = multiprocessing.cpu_count()
+    n_threads = multiprocessing.cpu_count() if n_threads == -1 else n_threads
 
     observations = np.vstack((num, den)).T
     if n_threads <= 1:

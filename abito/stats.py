@@ -68,8 +68,6 @@ def _mann_whitney_u_statistic(x: Iterable, y: Iterable, use_continuity: bool = T
     u1 = n1 * n2 + (n1 * (n1 + 1)) / 2.0 - np.sum(rankx, axis=0)  # calc U for x
 
     t = tiecorrect(ranked)
-    if t == 0:
-        raise ValueError('All numbers are identical in mannwhitneyu')
     std = np.sqrt(t * n1 * n2 * (n1 + n2 + 1) / 12.0)
 
     mean = n1 * n2 / 2.0 + 0.5 * use_continuity
@@ -81,7 +79,7 @@ def mann_whitney_u_test_from_stats(u1: float, mean: float, std: float) -> MannWh
     """
     :return: MannWhitneyUTestResult(u_statistic, z_statistic, p_value)
     """
-    z = - (u1 - mean) / std
+    z = np.divide(-(u1 - mean), std)
     p = 2 * distributions.norm.sf(abs(z))
     return MannWhitneyUTestResult(p_value=p, u_statistic=u1, z_statistic=z)
 
@@ -113,25 +111,22 @@ class LinearSample:
         """
         obs = np.asarray(obs)
 
-        if weights is not None:
-            weights = np.asarray(weights)
-            is_weighted = True
-        else:
-            weights = np.ones(obs.shape[0])
-            is_weighted = False
+        self.is_weighted = weights is not None
+
+        if self.is_weighted:
+            weights = np.floor(weights).astype(int)
 
         if ltrim or rtrim:
-            if is_weighted:
+            if self.is_weighted:
                 ind, weights = argtrimw(obs, weights, ltrim, rtrim)
                 obs = obs[ind]
             else:
                 ind = argtrim(obs, ltrim, rtrim)
                 obs = obs[ind]
-                weights = weights[ind]
 
         self.obs = obs
-        self.weights = weights
-        self.is_weighted = is_weighted
+        if self.is_weighted:
+            self.weights = weights
 
     @cached_property
     def full(self):
@@ -139,8 +134,7 @@ class LinearSample:
         :return: full sample after weights applied
         """
         if self.is_weighted:
-            w_int = np.floor(self.weights).astype(int)
-            return np.repeat(self.obs, w_int, axis=0)
+            return np.repeat(self.obs, self.weights, axis=0)
         else:
             return self.obs
 
@@ -149,22 +143,27 @@ class LinearSample:
         """
         :return: number of observations, sum of weights
         """
-        return self.weights.sum()
+        if self.is_weighted:
+            return self.weights.sum()
+        else:
+            return self.obs.shape[0]
 
     @cached_property
     def sum(self) -> np.float:
         """
         :return: sample sum
         """
-        res = np.dot(self.obs.T, self.weights)
-        return res
+        if self.is_weighted:
+            return np.dot(self.obs.T, self.weights)
+        else:
+            return self.obs.sum()
 
     @cached_property
     def mean(self) -> np.float:
         """
         :return: sample mean
         """
-        return self.sum / self.nobs
+        return np.divide(self.sum, self.nobs)
 
     @cached_property
     def demeaned(self) -> np.ndarray:
@@ -178,7 +177,10 @@ class LinearSample:
         """
         :return: sum of squares of demeaned observations
         """
-        return np.dot((self.demeaned**2).T, self.weights)
+        if self.is_weighted:
+            return np.dot((self.demeaned**2).T, self.weights)
+        else:
+            return (self.demeaned**2).sum()
 
     @cached_property
     def var(self) -> np.float:
@@ -226,14 +228,10 @@ class LinearSample:
                             use_continuity=True) -> MannWhitneyUTestResult:
         """
         :param control: control sample
+        :param use_continuity: use continuity correction
         :return: MannWhitneyUTestResult(u_statistic, z_statistic, p_value)
         """
-        try:
-            res = mann_whitney_u_test(self.full, control.full, use_continuity)
-        except Exception as e:
-            if str(e) == 'All numbers are identical in mannwhitneyu':
-                return MannWhitneyUTestResult(np.nan, np.nan, np.nan)
-            raise e
+        res = mann_whitney_u_test(self.full, control.full, use_continuity)  # TODO: support weighted samples
         return res
 
     def shapiro_test(self) -> ShapiroTestResult:
@@ -241,12 +239,9 @@ class LinearSample:
         Shapiro-Wilk test of normality
         :return: ShapiroTestResult(statistic, p_value)
         """
-        try:
-            res = shapiro(self.full)
-        except Exception as e:
-            if str(e) == 'Data must be at least length 3.':
-                return ShapiroTestResult(np.nan, np.nan)
-            raise e
+        if self.nobs < 3:
+            return ShapiroTestResult(np.nan, np.nan)
+        res = shapiro(self.full)
         return ShapiroTestResult(p_value=res[1], statistic=res[0])
 
     def median_test(self, control: Union["LinearSample", "RatioSample"]) -> MedianTestResult:
@@ -254,11 +249,9 @@ class LinearSample:
         :param control: control sample
         :return: MedianTestResult(statistic, p_value, grand_median)
         """
-        try:
-            res = median_test(self.full, control.full)
-        except Exception as e:
-            logger.debug(e)
+        if self.std == 0:
             return MedianTestResult(np.nan, np.nan, np.nan)
+        res = median_test(self.full, control.full)
         return MedianTestResult(p_value=res[1], statistic=res[0], grand_median=res[2])
 
     def levene_test(self, control: Union["LinearSample", "RatioSample"]) -> LeveneTestResult:
@@ -266,11 +259,7 @@ class LinearSample:
         :param control: control sample
         :return: LeveneTestResult(statistic, p_value)
         """
-        try:
-            res = levene(self.full, control.full)
-        except Exception as e:
-            logger.debug(e)
-            return LeveneTestResult(np.nan, np.nan)
+        res = levene(self.full, control.full)
         return LeveneTestResult(p_value=res[1], statistic=res[0])
 
     def mood_test(self, control: Union["LinearSample", "RatioSample"]) -> MoodTestResult:
@@ -278,11 +267,7 @@ class LinearSample:
         :param control: control sample
         :return: MoodTestResult(statistic, p_value)
         """
-        try:
-            res = mood(self.full, control.full)
-        except Exception as e:
-            logger.debug(e)
-            return MoodTestResult(np.nan, np.nan)
+        res = mood(self.full, control.full)
         return MoodTestResult(statistic=res[0], p_value=res[1])
 
 
@@ -298,6 +283,7 @@ class RatioSample(LinearSample):
             linstrat: str = 'taylor',
             ltrim: float = None,
             rtrim: float = None,
+            bootstrap_n_threads: int = 1
     ):
         """
         :param num: numerator of observed data
@@ -310,9 +296,9 @@ class RatioSample(LinearSample):
         """
         num = LinearSample(num, weights)
 
+        self.is_ratio = True
         if den is not None:
             den = LinearSample(den, weights)
-            is_ratio = True
             if linstrat == 'taylor':
                 r = num.sum / den.sum
                 s = (num.obs - r * den.obs) / den.mean + r
@@ -335,21 +321,23 @@ class RatioSample(LinearSample):
             super().__init__(s, weights)
         else:
             super().__init__(num.obs, weights, ltrim, rtrim)
-            num = LinearSample(num.obs, weights, ltrim, rtrim)
+            num = LinearSample(num.obs, weights, ltrim, rtrim)  # TODO: not to init twice
             weights = self.weights if self.is_weighted else None
             den = LinearSample(np.ones(self.obs.shape[0]), weights)
-            is_ratio = False
+            self.is_ratio = False
 
         self.num = num
         self.den = den
-        self.is_ratio = is_ratio
+
+        self.bootstrap_n_threads = bootstrap_n_threads
 
     @cached_property
     def bootstrap_mean_dist(self) -> np.ndarray:
         """
         :return: bootstrap distribution of sample mean
         """
-        return get_bootstrap_dist(self.num.full, self.den.full, 10000, 1, 1)
+        # TODO: support weighted samples
+        return get_bootstrap_dist(self.num.full, self.den.full, 10000, 1, self.bootstrap_n_threads)
 
     @cached_property
     def bootstrap_mean(self) -> np.ndarray:
@@ -377,5 +365,5 @@ class RatioSample(LinearSample):
         ) * 2
         md = np.median(dist)
         mds = np.std(dist)
-        s = md / mds
+        s = np.divide(md, mds)
         return BootstrapTestResult(statistic=s, p_value=p, mean_diff=md, mean_diff_std=mds)
