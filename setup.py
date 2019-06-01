@@ -14,6 +14,8 @@ setup(
     version='0.0.1',
     license='MIT',
     description='Package for hypothesis testing in A/B-experiments',
+    long_description=README,
+    long_description_content_type="text/markdown",
     author='Danila Lenkov',
     author_email='dlenkoff@gmail.com',
     url='https://github.com/avito-tech/abito',
