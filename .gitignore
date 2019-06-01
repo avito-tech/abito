@@ -7,3 +7,4 @@
 /notebooks
 /.idea
 /abito.egg-info
+.coverage

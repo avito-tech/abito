@@ -1,40 +1,7 @@
 import pytest
-from abito import RatioSample
 import numpy as np
-
-
-@pytest.fixture()
-def treatment():
-    np.random.seed(1)
-    return RatioSample(np.random.normal(loc=102, scale=10, size=100))
-
-
-@pytest.fixture()
-def control():
-    np.random.seed(2)
-    return RatioSample(np.random.normal(loc=100, scale=10, size=100))
-
-
-@pytest.fixture()
-def trimmed_treatment():
-    np.random.seed(1)
-    return RatioSample(np.random.normal(loc=102, scale=10, size=200), rtrim=0.01)
-
-
-@pytest.fixture()
-def ratio_treatment():
-    np.random.seed(1)
-    num = np.random.normal(500, 1000, size=200)
-    den = np.random.normal(1000, 1000, size=200)
-    return RatioSample(num, den)
-
-
-@pytest.fixture()
-def ratio_control():
-    np.random.seed(1)
-    num = np.random.normal(50100, 1000, size=200)
-    den = np.random.normal(100000, 1000, size=200)
-    return RatioSample(num, den)
+from abito import RatioSample
+import abito.utils as utils
 
 
 def test_sample_stats(treatment):
@@ -46,9 +13,17 @@ def test_sample_stats(treatment):
 
 
 def test_significance(treatment, control):
-    res = treatment.t_test(control)
+    res = treatment.t_test(control, equal_var=True)
     assert res.p_value == pytest.approx(0.0085, 0.01)
     assert res.statistic == pytest.approx(2.65, 0.01)
+
+    res = treatment.t_test(control, equal_var=False)
+    assert res.p_value == pytest.approx(0.0085, 0.01)
+    assert res.statistic == pytest.approx(2.65, 0.01)
+
+    res = treatment.t_test_1samp(101)
+    assert res.p_value == pytest.approx(0.074, 0.01)
+    assert res.statistic == pytest.approx(1.805, 0.01)
 
     res = treatment.mann_whitney_u_test(control)
     assert res.p_value == pytest.approx(0.0217, 0.01)
@@ -73,8 +48,40 @@ def test_significance(treatment, control):
     assert res.statistic == pytest.approx(-0.992, 0.01)
 
 
-def test_trimmed_treatment(trimmed_treatment):
-    assert trimmed_treatment.nobs == 198
+def test_exceptions(treatment_length2, treatment_equalobs, control_equalobs):
+    res = treatment_length2.shapiro_test()
+    assert np.isnan(res.statistic)
+    assert np.isnan(res.p_value)
+
+    res = treatment_equalobs.median_test(control_equalobs)
+    assert np.isnan(res.statistic)
+    assert np.isnan(res.p_value)
+    assert np.isnan(res.grand_median)
+
+    with pytest.raises(ValueError):
+        RatioSample([1, 2], [1, 2], linstrat='')
+
+
+def test_ratio_naive_linstrat(ratio_sample_naive_linstrat):
+    np.testing.assert_array_equal(ratio_sample_naive_linstrat.obs, [1, 1])
+
+
+def test_trimmed_weighted_samples(
+        trimmed_treatment,
+        trimmed_ratio_treatment,
+        weighted_treatment,
+        weighted_trimmed_treatment,
+        weighted_trimmed_ratio_treatment
+):
+    assert weighted_treatment.nobs == 600
+    assert weighted_treatment.full.shape[0] == 600
+    assert weighted_treatment.sum == 1200
+    assert weighted_treatment.demeaned_sumsquares == 400
+
+    assert trimmed_treatment.nobs == 196
+    assert trimmed_ratio_treatment.nobs == 196
+    assert weighted_trimmed_treatment.nobs == 588
+    assert weighted_trimmed_ratio_treatment.nobs == 588
 
 
 def test_bootstrap(ratio_treatment, ratio_control):
