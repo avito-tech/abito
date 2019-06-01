@@ -1,6 +1,6 @@
 # abito
 
-Python package for hypothesis testing. Suitable to use in A/B-testing software.
+Python package for hypothesis testing. Suitable for using in A/B-testing software.
 Tested for Python >= 3.5
 
 ##### Features

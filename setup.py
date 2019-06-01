@@ -9,11 +9,18 @@ HERE = pathlib.Path(__file__).parent
 
 README = (HERE / "README.md").read_text()
 
+LONG_DESCRIPTION = (
+    'Python package for hypothesis testing. Suitable for using in A/B-testing software. ' 
+    'Based on statistical tests from scipy.stats: t-test, Mann-Whitney U, Shapiro-Wilk, Levene, Mood, Median. '
+    'Works with weighted samples. Can trim sample tails. Works with Ratio samples.'
+)
+
 setup(
     name='abito',
     version='0.0.1',
     license='MIT',
     description='Package for hypothesis testing in A/B-experiments',
+    long_description=LONG_DESCRIPTION,
     author='Danila Lenkov',
     author_email='dlenkoff@gmail.com',
     url='https://github.com/avito-tech/abito',
