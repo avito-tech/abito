@@ -1,4 +1,6 @@
 # abito
+[![Build Status](https://travis-ci.com/avito-tech/abito.svg?branch=master)](https://travis-ci.com/avito-tech/abito)
+[![Coverage Status](https://coveralls.io/repos/github/avito-tech/abito/badge.svg?branch=master)](https://coveralls.io/github/avito-tech/abito?branch=master)
 
 Python package for hypothesis testing. Suitable for using in A/B-testing software.
 Tested for Python >= 3.5
