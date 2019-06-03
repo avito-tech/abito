@@ -1,4 +1,3 @@
-import logging
 from typing import Union, Iterable
 from cached_property import cached_property
 import numpy as np
@@ -10,8 +9,6 @@ from .bootstrap import get_bootstrap_dist
 
 
 np.warnings.filterwarnings('ignore')
-
-logger = logging.getLogger()
 
 
 def _unequal_var_ttest_denom(v1, n1, v2, n2):
