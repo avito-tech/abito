@@ -1,49 +1,57 @@
-from typing import NamedTuple
+from collections import namedtuple
+from numpy import nan
 
 
-TTestResult = NamedTuple('TTestResult', [
-    ('statistic', float),
-    ('p_value', float),
-    ('mean_diff', float),
-    ('mean_diff_std', float),
+TTestResult = namedtuple('TTestResult', [
+    'statistic',
+    'p_value',
+    'mean_diff',
+    'mean_diff_std',
 ])
+TTestResult.__new__.__defaults__ = (nan,) * len(TTestResult._fields)
 
 
-MannWhitneyUTestResult = NamedTuple('MannWhitneyUTestResult', [
-    ('u_statistic', float),
-    ('z_statistic', float),
-    ('p_value', float),
+MannWhitneyUTestResult = namedtuple('MannWhitneyUTestResult', [
+    'u_statistic',
+    'z_statistic',
+    'p_value',
 ])
+MannWhitneyUTestResult.__new__.__defaults__ = (nan,) * len(TTestResult._fields)
 
 
-ShapiroTestResult = NamedTuple('ShapiroTestResult', [
-    ('statistic', float),
-    ('p_value', float),
+ShapiroTestResult = namedtuple('ShapiroTestResult', [
+    'statistic',
+    'p_value',
 ])
+ShapiroTestResult.__new__.__defaults__ = (nan,) * len(TTestResult._fields)
 
 
-MedianTestResult = NamedTuple('MedianTestResult', [
-    ('statistic', float),
-    ('p_value', float),
-    ('grand_median', float),
+MedianTestResult = namedtuple('MedianTestResult', [
+    'statistic',
+    'p_value',
+    'grand_median',
 ])
+MedianTestResult.__new__.__defaults__ = (nan,) * len(TTestResult._fields)
 
 
-LeveneTestResult = NamedTuple('LeveneTestResult', [
-    ('statistic', float),
-    ('p_value', float),
+LeveneTestResult = namedtuple('LeveneTestResult', [
+    'statistic',
+    'p_value',
 ])
+LeveneTestResult.__new__.__defaults__ = (nan,) * len(TTestResult._fields)
 
 
-MoodTestResult = NamedTuple('MoodTestResult', [
-    ('statistic', float),
-    ('p_value', float),
+MoodTestResult = namedtuple('MoodTestResult', [
+    'statistic',
+    'p_value',
 ])
+MoodTestResult.__new__.__defaults__ = (nan,) * len(TTestResult._fields)
 
 
-BootstrapTestResult = NamedTuple('BootstrapTestResult', [
-    ('statistic', float),
-    ('p_value', float),
-    ('mean_diff', float),
-    ('mean_diff_std', float)
+BootstrapTestResult = namedtuple('BootstrapTestResult', [
+    'statistic',
+    'p_value',
+    'mean_diff',
+    'mean_diff_std'
 ])
+BootstrapTestResult.__new__.__defaults__ = (nan,) * len(TTestResult._fields)
