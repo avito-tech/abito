@@ -358,7 +358,7 @@ class RatioSample(LinearSample):
         dist = self.bootstrap_mean_dist - control.bootstrap_mean_dist
         p = min(
             (dist <= 0).mean(axis=0),
-            (dist >= 0).mean(axis=0),
+            (dist > 0).mean(axis=0),
         ) * 2
         md = np.median(dist)
         mds = np.std(dist)
