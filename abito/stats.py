@@ -3,7 +3,7 @@ from cached_property import cached_property
 import numpy as np
 from scipy.stats import rankdata, tiecorrect, shapiro, distributions, median_test, levene, mood
 
-from .utils import argtrim, argtrimw
+from .utils import argtrim, argtrimw, compress_sample
 from .result_tuples import *
 from .bootstrap import get_bootstrap_dist
 
@@ -98,7 +98,8 @@ class LinearSample:
             obs: Iterable[Union[int, float]],
             weights: Iterable[Union[int, float]] = None,
             ltrim: float = None,
-            rtrim: float = None
+            rtrim: float = None,
+            compress: bool = False,
     ):
         """
         :param obs: sample of observations
@@ -108,7 +109,10 @@ class LinearSample:
         """
         obs = np.asarray(obs)
 
-        self.is_weighted = weights is not None
+        self.is_weighted = weights is not None or compress
+
+        if compress:
+            obs, _, weights = compress_sample(obs, None, weights)
 
         if self.is_weighted:
             weights = np.floor(weights).astype(int)
@@ -280,7 +284,8 @@ class RatioSample(LinearSample):
             linstrat: str = 'taylor',
             ltrim: float = None,
             rtrim: float = None,
-            bootstrap_n_threads: int = 1
+            compress: bool = False,
+            bootstrap_n_threads: int = 1,
     ):
         """
         :param num: numerator of observed data
@@ -291,10 +296,14 @@ class RatioSample(LinearSample):
         :param ltrim: proportion of data to cut from left tail
         :param rtrim: proportion of data to cut from right tail
         """
+        self.is_weighted = weights is not None or compress
+        self.is_ratio = den is not None
+        if compress:
+            num, den, weights = compress_sample(num, den, weights)
+
         num = LinearSample(num, weights)
 
-        self.is_ratio = True
-        if den is not None:
+        if self.is_ratio:
             den = LinearSample(den, weights)
             if linstrat == 'taylor':
                 r = num.sum / den.sum
@@ -305,7 +314,7 @@ class RatioSample(LinearSample):
                 raise ValueError("linearizarion strategy must be 'taylor' or 'naive'")
 
             if ltrim or rtrim:
-                if num.is_weighted:
+                if self.is_weighted:
                     ind, weights = argtrimw(s, weights, ltrim, rtrim)
                     s = s[ind]
                     num = LinearSample(num.obs[ind], weights)
@@ -321,7 +330,6 @@ class RatioSample(LinearSample):
             num = LinearSample(num.obs, weights, ltrim, rtrim)  # TODO: not to init twice
             weights = self.weights if self.is_weighted else None
             den = LinearSample(np.ones(self.obs.shape[0]), weights)
-            self.is_ratio = False
 
         self.num = num
         self.den = den

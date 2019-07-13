@@ -96,3 +96,12 @@ def test_bootstrap(ratio_treatment, ratio_control):
     assert t.p_value == pytest.approx(bs.p_value, 0.2)
     assert t.mean_diff == pytest.approx(bs.mean_diff, 0.01)
     assert t.mean_diff_std == pytest.approx(bs.mean_diff_std, 0.01)
+
+
+def test_compress(treatment_for_compress, ratio_treatment_for_compress):
+    np.testing.assert_array_equal(treatment_for_compress.obs, [1, 2, 3])
+    np.testing.assert_array_equal(treatment_for_compress.weights, [300, 200, 200])
+
+    np.testing.assert_array_equal(ratio_treatment_for_compress.num.obs, [1, 2, 3])
+    np.testing.assert_array_equal(ratio_treatment_for_compress.den.obs, [2, 2, 3])
+    np.testing.assert_array_equal(ratio_treatment_for_compress.weights, [300, 200, 200])

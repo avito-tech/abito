@@ -35,3 +35,29 @@ def test_utils_exceptions():
 
     assert argtrimw([1, 2], [2, 2], ltrim=1.01) == ([], [])
     assert argtrimw([1, 2], [2, 2], rtrim=1.01) == ([], [])
+
+
+def test_compress_sample():
+    num = [1, 2, 1, 3]
+    den = [1, 1, 2, 2]
+    weights = [3, 2, 2, 2]
+
+    num_c, den_c, weights_c = compress_sample(num, None, None)
+    np.testing.assert_array_equal(num_c, [1, 2, 3])
+    np.testing.assert_array_equal(den_c, [1, 1, 1])
+    np.testing.assert_array_equal(weights_c, [2, 1, 1])
+
+    num_c, den_c, weights_c = compress_sample(num, den, None)
+    np.testing.assert_array_equal(num_c, [1, 1, 2, 3])
+    np.testing.assert_array_equal(den_c, [1, 2, 1, 2])
+    np.testing.assert_array_equal(weights_c, [1, 1, 1, 1])
+
+    num_c, den_c, weights_c = compress_sample(num, None, weights)
+    np.testing.assert_array_equal(num_c, [1, 2, 3])
+    np.testing.assert_array_equal(den_c, [1, 1, 1])
+    np.testing.assert_array_equal(weights_c, [5, 2, 2])
+
+    num_c, den_c, weights_c = compress_sample(num, den, weights)
+    np.testing.assert_array_equal(num_c, [1, 1, 2, 3])
+    np.testing.assert_array_equal(den_c, [1, 2, 1, 2])
+    np.testing.assert_array_equal(weights_c, [3, 2, 2, 2])
