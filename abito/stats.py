@@ -129,7 +129,7 @@ class LinearSample:
         if self.is_weighted:
             self.weights = weights
 
-    @cached_property
+    @property
     def full(self):
         """
         :return: full sample after weights applied
@@ -155,7 +155,7 @@ class LinearSample:
         :return: sample sum
         """
         if self.is_weighted:
-            return np.dot(self.obs.T, self.weights)
+            return np.float(np.dot(self.obs.T, self.weights))
         else:
             return self.obs.sum()
 
