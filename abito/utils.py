@@ -1,5 +1,6 @@
 import numpy as np
-from typing import Iterable, Tuple
+import pandas as pd
+from typing import Iterable, Tuple, Union
 
 
 def argtrim(a: Iterable, ltrim: float = None, rtrim: float = None) -> np.ndarray:
@@ -71,3 +72,15 @@ def argtrimw(a: Iterable, weights: Iterable, ltrim: float = None, rtrim: float =
     ind_sorted = ind_sorted[lowercut_a:uppercut_a]
     weights_sorted = weights_sorted[lowercut_a:uppercut_a]
     return ind_sorted, weights_sorted
+
+
+def compress_sample(
+        num: Iterable[Union[int, float]],
+        den: Iterable[Union[int, float]] = None,
+        weights: Iterable[Union[int, float]] = None,
+) -> Tuple[np.array, np.array, np.array]:
+    df = pd.DataFrame({'num': num})
+    df['den'] = den if den else 1
+    df['weights'] = weights if weights else 1
+    grp = df.groupby(['num', 'den']).sum().reset_index(drop=False)
+    return grp.num.values, grp.den.values, grp.weights.values

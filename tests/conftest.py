@@ -81,3 +81,13 @@ def control_equalobs():
 @pytest.fixture()
 def ratio_sample_naive_linstrat():
     return RatioSample([1, 2], [1, 2], linstrat='naive')
+
+
+@pytest.fixture()
+def treatment_for_compress():
+    return LinearSample([1, 1, 2, 3], weights=[200, 100, 200, 200], compress=True)
+
+
+@pytest.fixture()
+def ratio_treatment_for_compress():
+    return RatioSample([1, 1, 2, 3], den=[2, 2, 2, 3], weights=[200, 100, 200, 200], compress=True)
