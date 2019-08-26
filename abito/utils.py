@@ -78,7 +78,7 @@ def compress_sample(
         num: Iterable[Union[int, float]],
         den: Iterable[Union[int, float]] = None,
         weights: Iterable[Union[int, float]] = None,
-) -> Tuple[np.array, np.array, np.array]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     df = pd.DataFrame({'num': num})
     df['den'] = den if den else 1
     df['weights'] = weights if weights else 1
