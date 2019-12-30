@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
-from abito import RatioSample
-import abito.utils as utils
+from abito import Sample
 
 
 def test_sample_stats(treatment):
@@ -59,7 +58,7 @@ def test_exceptions(treatment_length2, treatment_equalobs, control_equalobs):
     assert np.isnan(res.grand_median)
 
     with pytest.raises(ValueError):
-        RatioSample([1, 2], [1, 2], linstrat='')
+        Sample([1, 2], [1, 2], linstrat='')
 
 
 def test_ratio_naive_linstrat(ratio_sample_naive_linstrat):
@@ -100,8 +99,7 @@ def test_bootstrap(ratio_treatment, ratio_control):
 
 def test_compress(treatment_for_compress, ratio_treatment_for_compress):
     np.testing.assert_array_equal(treatment_for_compress.obs, [1, 2, 3])
-    np.testing.assert_array_equal(treatment_for_compress.weights, [300, 200, 200])
 
     np.testing.assert_array_equal(ratio_treatment_for_compress.num.obs, [1, 2, 3])
     np.testing.assert_array_equal(ratio_treatment_for_compress.den.obs, [2, 2, 3])
-    np.testing.assert_array_equal(ratio_treatment_for_compress.weights, [300, 200, 200])
+

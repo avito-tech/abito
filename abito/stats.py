@@ -3,7 +3,7 @@ from cached_property import cached_property
 import numpy as np
 from scipy.stats import rankdata, tiecorrect, shapiro, distributions, median_test, levene, mood
 
-from .utils import argtrim, argtrimw, compress_sample
+from .utils import argtrimw, compress_1d, compress_2d
 from .result_tuples import *
 from .bootstrap import get_bootstrap_dist
 
@@ -93,111 +93,67 @@ class LinearSample:
     """
     Statistics and significance tests for 1d-sample.
     """
-    def __init__(
-            self,
-            obs: Iterable[Union[int, float]],
-            weights: Iterable[Union[int, float]] = None,
-            ltrim: float = None,
-            rtrim: float = None,
-            compress: bool = False,
-    ):
-        """
-        :param obs: sample of observations
-        :param weights: weights of observations. Length must be the same as obs's
-        :param ltrim: proportion of data to cut from left tail
-        :param rtrim: proportion of data to cut from right tail
-        """
+    def __init__(self, obs: Iterable[Union[int, float]]):
         obs = np.asarray(obs)
-
-        self.is_weighted = weights is not None or compress
-
-        if compress:
-            obs, _, weights = compress_sample(obs, None, weights)
-
-        if self.is_weighted:
-            weights = np.floor(weights).astype(int)
-
-        if ltrim or rtrim:
-            if self.is_weighted:
-                ind, weights = argtrimw(obs, weights, ltrim, rtrim)
-                obs = obs[ind]
-            else:
-                ind = argtrim(obs, ltrim, rtrim)
-                obs = obs[ind]
-
         self.obs = obs
-        if self.is_weighted:
-            self.weights = weights
 
     @property
     def full(self):
         """
-        :return: full sample after weights applied
+        :return: full sample
         """
-        if self.is_weighted:
-            return np.repeat(self.obs, self.weights, axis=0)
-        else:
-            return self.obs
+        return self.obs
 
-    @cached_property
+    @property
     def nobs(self):
         """
-        :return: number of observations, sum of weights
+        :return: number of observations
         """
-        if self.is_weighted:
-            return self.weights.sum()
-        else:
-            return self.obs.shape[0]
+        return self.obs.shape[0]
 
-    @cached_property
+    @property
     def sum(self) -> np.float:
         """
         :return: sample sum
         """
-        if self.is_weighted:
-            return np.float(np.dot(self.obs.T, self.weights))
-        else:
-            return self.obs.sum()
+        return self.obs.sum()
 
-    @cached_property
+    @property
     def mean(self) -> np.float:
         """
         :return: sample mean
         """
         return np.divide(self.sum, self.nobs)
 
-    @cached_property
+    @property
     def demeaned(self) -> np.ndarray:
         """
         :return: demeaned observations
         """
         return self.obs - self.mean
 
-    @cached_property
+    @property
     def demeaned_sumsquares(self) -> np.ndarray:
         """
         :return: sum of squares of demeaned observations
         """
-        if self.is_weighted:
-            return np.dot((self.demeaned**2).T, self.weights)
-        else:
-            return (self.demeaned**2).sum()
+        return (self.demeaned**2).sum()
 
-    @cached_property
+    @property
     def var(self) -> np.float:
         """
         :return: sample variance, unbiased
         """
         return self.demeaned_sumsquares / (self.nobs - 1)
 
-    @cached_property
+    @property
     def std(self) -> np.float:
         """
         :return: sample standard deviation, square root of the sample variance
         """
         return np.sqrt(self.var)
 
-    @cached_property
+    @property
     def mean_std(self):
         """
         :return: sample standard deviation of the sample mean
@@ -211,7 +167,7 @@ class LinearSample:
         """
         return _t_test_from_stats(self.mean, popmean, self.mean_std, self.nobs - 1)
 
-    def t_test(self, control: Union["LinearSample", "RatioSample"], equal_var: bool = False) -> TTestResult:
+    def t_test(self, control: Union['LinearSample', 'LinearSampleW'], equal_var: bool = False) -> TTestResult:
         """
         :param control: control sample
         :param equal_var:
@@ -225,7 +181,7 @@ class LinearSample:
                                  control.mean, control.std, control.nobs,
                                  equal_var=equal_var)
 
-    def mann_whitney_u_test(self, control: Union["LinearSample", "RatioSample"],
+    def mann_whitney_u_test(self, control: Union['LinearSample', 'LinearSampleW'],
                             use_continuity=True) -> MannWhitneyUTestResult:
         """
         :param control: control sample
@@ -245,7 +201,7 @@ class LinearSample:
         res = shapiro(self.full)
         return ShapiroTestResult(p_value=res[1], statistic=res[0])
 
-    def median_test(self, control: Union["LinearSample", "RatioSample"]) -> MedianTestResult:
+    def median_test(self, control: Union['LinearSample', 'LinearSampleW']) -> MedianTestResult:
         """
         :param control: control sample
         :return: MedianTestResult(statistic, p_value, grand_median)
@@ -255,7 +211,7 @@ class LinearSample:
         res = median_test(self.full, control.full)
         return MedianTestResult(p_value=res[1], statistic=res[0], grand_median=res[2])
 
-    def levene_test(self, control: Union["LinearSample", "RatioSample"]) -> LeveneTestResult:
+    def levene_test(self, control: Union['LinearSample', 'LinearSampleW']) -> LeveneTestResult:
         """
         :param control: control sample
         :return: LeveneTestResult(statistic, p_value)
@@ -263,7 +219,7 @@ class LinearSample:
         res = levene(self.full, control.full)
         return LeveneTestResult(p_value=res[1], statistic=res[0])
 
-    def mood_test(self, control: Union["LinearSample", "RatioSample"]) -> MoodTestResult:
+    def mood_test(self, control: Union['LinearSample', 'LinearSampleW']) -> MoodTestResult:
         """
         :param control: control sample
         :return: MoodTestResult(statistic, p_value)
@@ -272,69 +228,55 @@ class LinearSample:
         return MoodTestResult(statistic=res[0], p_value=res[1])
 
 
-class RatioSample(LinearSample):
+class LinearSampleW(LinearSample):
     """
-    Statistics and significance tests for ratio sample.
+    Statistics and significance tests for 1d-sample. Weighted version.
     """
     def __init__(
             self,
-            num: Iterable[Union[int, float]],
-            den: Iterable[Union[int, float]] = None,
-            weights: Iterable[Union[int, float]] = None,
-            linstrat: str = 'taylor',
-            ltrim: float = None,
-            rtrim: float = None,
-            compress: bool = False,
-            bootstrap_n_threads: int = 1,
+            obs: Iterable[Union[int, float]],
+            weights: Iterable[Union[int, float]],
     ):
+        super().__init__(obs)
+        weights = np.floor(weights).astype(int)
+        self.weights = weights
+
+    @property
+    def full(self):
         """
-        :param num: numerator of observed data
-        :param den: denominator of observed data
-        :param weights: weights of observations. Length must be the same as obs's
-        :param linstrat:
-        lineariztion strategy. 'naive' when ratio computes element-wize. 'taylor' to use Taylor's expansion at mean.
-        :param ltrim: proportion of data to cut from left tail
-        :param rtrim: proportion of data to cut from right tail
+        :return: full sample after weights applied
         """
-        self.is_weighted = weights is not None or compress
-        self.is_ratio = den is not None
-        if compress:
-            num, den, weights = compress_sample(num, den, weights)
+        return np.repeat(self.obs, self.weights, axis=0)
 
-        num = LinearSample(num, weights)
+    @property
+    def nobs(self):
+        """
+        :return: number of observations, sum of weights
+        """
+        return self.weights.sum()
 
-        if self.is_ratio:
-            den = LinearSample(den, weights)
-            if linstrat == 'taylor':
-                r = num.sum / den.sum
-                s = (num.obs - r * den.obs) / den.mean + r
-            elif linstrat == 'naive':
-                s = num.obs / den.obs
-            else:
-                raise ValueError("linearizarion strategy must be 'taylor' or 'naive'")
+    @property
+    def sum(self) -> np.float:
+        """
+        :return: sample sum
+        """
+        return np.float(np.dot(self.obs.T, self.weights))
 
-            if ltrim or rtrim:
-                if self.is_weighted:
-                    ind, weights = argtrimw(s, weights, ltrim, rtrim)
-                    s = s[ind]
-                    num = LinearSample(num.obs[ind], weights)
-                    den = LinearSample(den.obs[ind], weights)
-                else:
-                    ind = argtrim(s, ltrim, rtrim)
-                    s = s[ind]
-                    num = LinearSample(num.obs[ind])
-                    den = LinearSample(den.obs[ind])
-            super().__init__(s, weights)
-        else:
-            super().__init__(num.obs, weights, ltrim, rtrim)
-            num = LinearSample(num.obs, weights, ltrim, rtrim)  # TODO: not to init twice
-            weights = self.weights if self.is_weighted else None
-            den = LinearSample(np.ones(self.obs.shape[0]), weights)
+    @property
+    def demeaned_sumsquares(self) -> np.ndarray:
+        """
+        :return: sum of squares of demeaned observations
+        """
+        return np.dot((self.demeaned**2).T, self.weights)
 
-        self.num = num
-        self.den = den
 
-        self.bootstrap_n_threads = bootstrap_n_threads
+class RatioSample(LinearSample):
+    bootstrap_n_threads: int = 1
+    num: Union['LinearSample', 'LinearSampleW'] = None
+    den: Union['LinearSample', 'LinearSampleW'] = None
+
+    def __init__(self, obs):
+        super().__init__(obs)
 
     @cached_property
     def bootstrap_mean_dist(self) -> np.ndarray:
@@ -358,7 +300,7 @@ class RatioSample(LinearSample):
         """
         return np.std(self.bootstrap_mean_dist)
 
-    def bootstrap_test(self, control: "RatioSample") -> BootstrapTestResult:
+    def bootstrap_test(self, control: Union['RatioSample', 'RatioSampleW']) -> BootstrapTestResult:
         """
         :param control: control sample
         :return: BootstrapTestResult(statistic, p_value, mean_diff, mean_diff_std)
@@ -372,3 +314,110 @@ class RatioSample(LinearSample):
         mds = np.std(dist)
         s = np.divide(md, mds)
         return BootstrapTestResult(statistic=s, p_value=p, mean_diff=md, mean_diff_std=mds)
+
+
+class RatioSampleW(LinearSampleW, RatioSample):
+    pass
+
+
+def linear_sample_factory(
+    obs: Iterable[Union[int, float]],
+    weights: Iterable[Union[int, float]] = None,
+    ltrim: float = None,
+    rtrim: float = None,
+    compress: bool = False,
+):
+    obs = np.asarray(obs)
+
+    if weights is None:
+        if compress:
+            obs, weights = compress_1d(obs)
+
+    if ltrim or rtrim:
+        ind, weights = argtrimw(obs, weights, ltrim, rtrim)
+        obs = obs[ind]
+
+    if weights is not None:
+        return LinearSampleW(obs, weights)
+    else:
+        return LinearSample(obs)
+
+
+def prepare_ratio_components(num, den, linstrat, weights, ltrim, rtrim):
+    num = linear_sample_factory(num, weights)
+    den = linear_sample_factory(den, weights)
+
+    if linstrat == 'taylor':
+        r = num.sum / den.sum
+        obs = (num.obs - r * den.obs) / den.mean + r
+    elif linstrat == 'naive':
+        obs = num.obs / den.obs
+    else:
+        raise ValueError("linearizarion strategy must be 'taylor' or 'naive'")
+
+    if ltrim or rtrim:
+        ind, weights = argtrimw(obs, weights, ltrim, rtrim)
+        obs = obs[ind]
+        num = linear_sample_factory(num.obs[ind], weights)
+        den = linear_sample_factory(den.obs[ind], weights)
+
+    return obs, num, den, weights
+
+
+def ratio_sample_factory(
+        num: Iterable[Union[int, float]],
+        den: Iterable[Union[int, float]],
+        linstrat: str,
+        weights: Iterable[Union[int, float]] = None,
+        ltrim: float = None,
+        rtrim: float = None,
+        compress: bool = False,
+        bootstrap_n_threads: int = 1,
+):
+    if weights is None:
+        if compress:
+            u, weights = compress_2d(np.array([num, den]).T)
+            num, den = u[:, 0], u[:, 1]
+
+    obs, num, den, weights = prepare_ratio_components(num, den, linstrat, weights, ltrim, rtrim)
+
+    if weights is not None:
+        r = RatioSampleW(obs, weights)
+    else:
+        r = RatioSample(obs)
+
+    r.num = num
+    r.den = den
+    r.bootstrap_n_threads = bootstrap_n_threads
+
+    return r
+
+
+def sample_factory(
+        num: Iterable[Union[int, float]],
+        den: Iterable[Union[int, float]] = None,
+        weights: Iterable[Union[int, float]] = None,
+        linstrat: str = 'taylor',
+        ltrim: float = None,
+        rtrim: float = None,
+        compress: bool = False,
+        bootstrap_n_threads: int = 1,
+):
+    """
+    :param num: numerator of observed data
+    :param den: denominator of observed data
+    :param weights: weights of observations. Length must be the same as obs's
+    :param linstrat:
+    lineariztion strategy. 'naive' when ratio computes element-wize. 'taylor' to use Taylor's expansion at mean.
+    :param ltrim: proportion of data to cut from left tail
+    :param rtrim: proportion of data to cut from right tail
+    :param compress: turn not-weighted sample into weighted version
+    :param bootstrap_n_threads: number of processes to use in bootstrapping methods
+    """
+    if den is None:
+        return linear_sample_factory(num, weights, ltrim, rtrim, compress)
+    else:
+        return ratio_sample_factory(num, den, linstrat, weights, ltrim, rtrim, compress, bootstrap_n_threads)
+
+
+Sample = sample_factory
