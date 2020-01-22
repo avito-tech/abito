@@ -11,7 +11,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name='abito',
-    version='0.1.0',
+    version='0.1.1',
     license='MIT',
     description='Package for hypothesis testing in A/B-experiments',
     long_description=README,
