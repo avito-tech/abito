@@ -8,3 +8,4 @@
 /.idea
 /abito.egg-info
 .coverage
+/package_upload_steps.txt

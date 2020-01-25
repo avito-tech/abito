@@ -479,7 +479,7 @@ class RatioSample(SampleBase):
             cls,
             num: np.ndarray,
             den: np.ndarray,
-            weights: np.ndarray = None,
+            weights: np.ndarray = np.empty(0, dtype='int'),
     ) -> 'RatioSample':
         """
 
