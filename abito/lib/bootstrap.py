@@ -7,8 +7,7 @@ __all__ = ['generate_bootstrap_estimates']
 
 
 def _do_bootstrap_plain(obs, stat_func, stat_args, n_iters, seed):
-    if seed is not None:
-        np.random.seed(seed)
+    np.random.seed(seed)
 
     nobs = obs.shape[0]
     result = []
@@ -20,8 +19,7 @@ def _do_bootstrap_plain(obs, stat_func, stat_args, n_iters, seed):
 
 
 def _do_bootstrap_weighted(obs, weights, stat_func, stat_args, n_iters, seed):
-    if seed is not None:
-        np.random.seed(seed)
+    np.random.seed(seed)
 
     if stat_func.__name__ == 'quantile':
         obs, weights = _sort_obs(obs, weights)
@@ -52,7 +50,8 @@ def generate_bootstrap_estimates(obs, stat_func, n_iters, weights=np.empty(0), n
     n_threads = multiprocessing.cpu_count() if n_threads == -1 else n_threads
     if n_threads <= 1:
         func, args = _prepare_bootstrap_procedure(obs, weights, stat_func, n_iters, **stat_args)
-        results = np.asarray(func(*args, 0))
+        seed = np.random.randint(2**32)
+        results = np.asarray(func(*args, seed))
     else:
         with multiprocessing.Pool(n_threads) as pool:
             n_iters_per_thread = int(n_iters / n_threads)
