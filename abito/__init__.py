@@ -4,7 +4,7 @@ from abito.lib import stats
 from abito.lib import bootstrap
 from abito.lib.prepare import compress, trim
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 __all__ = [
     'significance'
